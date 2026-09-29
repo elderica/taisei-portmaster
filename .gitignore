@@ -1,0 +1,9 @@
+/work/
+/dist/
+/ports/taisei/taisei/taisei.*
+/ports/taisei/taisei/data/
+/ports/taisei/taisei/libs.*/
+/ports/taisei/taisei/licenses/
+/ports/taisei/taisei/conf/
+/ports/taisei/taisei/cache/
+/ports/taisei/taisei/log.txt

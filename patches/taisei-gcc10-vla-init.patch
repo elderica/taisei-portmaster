@@ -1,0 +1,56 @@
+diff --git a/src/renderer/gl33/gl33.c b/src/renderer/gl33/gl33.c
+index cac558d..2993a9e 100644
+--- a/src/renderer/gl33/gl33.c
++++ b/src/renderer/gl33/gl33.c
+@@ -569,7 +569,8 @@ static void gl33_sync_magic_uniforms(void) {
+ 
+ 		if(num_color_out > 0) {
+ 			IntExtent fb_size = gl33_get_default_framebuffer_size();
+-			vec2 out[num_color_out] = {};
++			vec2 out[num_color_out];
++			memset(out, 0, sizeof(out));
+ 			glm_vec2_copy((vec2) { fb_size.w, fb_size.h }, out[0]);
+ 			r_uniform_vec2_array(u[UMAGIC_COLOR_OUT_SIZES], 0, num_color_out, out);
+ 		}
+diff --git a/src/renderer/gl33/shader_object.c b/src/renderer/gl33/shader_object.c
+index 390363c..358967e 100644
+--- a/src/renderer/gl33/shader_object.c
++++ b/src/renderer/gl33/shader_object.c
+@@ -51,7 +51,8 @@ static void print_info_log(GLuint shader) {
+ 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
+ 
+ 	if(len > 1) {
+-		char log[len] = {};
++		char log[len];
++		memset(log, 0, sizeof(log));
+ 		glGetShaderInfoLog(shader, len, &alen, log);
+ 
+ 		log_warn(
+diff --git a/src/renderer/gl33/shader_program.c b/src/renderer/gl33/shader_program.c
+index fb3149a..f6320f9 100644
+--- a/src/renderer/gl33/shader_program.c
++++ b/src/renderer/gl33/shader_program.c
+@@ -438,7 +438,8 @@ static void print_info_log(GLuint prog) {
+ 	glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &len);
+ 
+ 	if(len > 1) {
+-		char log[len] = {};
++		char log[len];
++		memset(log, 0, sizeof(log));
+ 		glGetProgramInfoLog(prog, len, &alen, log);
+ 
+ 		log_warn(
+diff --git a/src/vfs/loadpacks.c b/src/vfs/loadpacks.c
+index cda2728..4f22ae1 100644
+--- a/src/vfs/loadpacks.c
++++ b/src/vfs/loadpacks.c
+@@ -41,7 +41,8 @@ static struct pkg_loader_t {
+ };
+ 
+ static struct pkg_loader_t* find_loader(const char *str) {
+-	char buf[strlen(str) + 1] = {};
++	char buf[strlen(str) + 1];
++	memset(buf, 0, sizeof(buf));
+ 
+ 	for(char *p = buf; *str; ++p, ++str) {
+ 		*p = tolower(*str);
