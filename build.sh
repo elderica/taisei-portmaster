@@ -93,11 +93,37 @@ PKG_CONFIG_PATH="$WORK/sdl3/lib/pkgconfig" meson setup "$WORK/build" "$WORK/tais
 meson install -C "$WORK/build"
 
 # Assemble the port directory
-rm -rf "$GAMEDIR/data" "$GAMEDIR/libs.$ARCH" "$GAMEDIR"/taisei.* "$GAMEDIR/licenses"
+rm -rf "$GAMEDIR/data" "$GAMEDIR"/data-part*.tar.gz "$GAMEDIR/libs.$ARCH" "$GAMEDIR"/taisei.* "$GAMEDIR/licenses"
 mkdir -p "$GAMEDIR/libs.$ARCH" "$GAMEDIR/licenses"
 cp "$WORK/install/taisei" "$GAMEDIR/taisei.$ARCH"
 patchelf --remove-rpath "$GAMEDIR/taisei.$ARCH"
-cp -r "$WORK/install/data" "$GAMEDIR/data"
+
+# Game data as data-partN.tar.gz (GitHub rejects files over 100 MB); the launcher extracts them.
+# The main pack is shipped as loose files from its source pkgdir: Taisei reads loose and .zst
+# files from data/ directly, like a -Dpackage_data=disabled build (which would drop the l10n pack).
+rm -rf "$WORK/datastage"
+mkdir -p "$WORK/datastage/data"
+cp -r "$WORK/taisei/resources/00-taisei.pkgdir/." "$WORK/datastage/data/"
+find "$WORK/datastage/data" \( -name meson.build -o -name .nocompress \) -delete
+cp "$WORK/install/data/10-l10n.zip" "$WORK/install/data/gamecontrollerdb.txt" "$WORK/datastage/data/"
+python3 - "$WORK/datastage" "$GAMEDIR" <<'EOF'
+import os, sys, tarfile
+stage, out = sys.argv[1:]
+files = sorted(os.path.relpath(os.path.join(d, f), stage)
+               for d, _, fs in os.walk(os.path.join(stage, 'data')) for f in fs)
+parts, size = [[]], 0
+for f in files:
+    n = os.path.getsize(os.path.join(stage, f))
+    if parts[-1] and size + n > 80 << 20:
+        parts.append([])
+        size = 0
+    parts[-1].append(f)
+    size += n
+for i, part in enumerate(parts, 1):
+    with tarfile.open(os.path.join(out, f'data-part{i}.tar.gz'), 'w:gz') as tar:
+        for f in part:
+            tar.add(os.path.join(stage, f), arcname=f)
+EOF
 
 cp -L "$WORK/sdl3/lib/libSDL3.so.0" "$GAMEDIR/libs.$ARCH/libSDL3.so.0"
 strip "$GAMEDIR/libs.$ARCH/libSDL3.so.0"

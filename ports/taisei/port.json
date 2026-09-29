@@ -13,7 +13,7 @@
     ],
     "desc": "A free and open-source Touhou Project fan game. Dodge dense bullet patterns across six stages plus an extra stage, with a full story, spell practice and replays.",
     "desc_md": null,
-    "inst": "Ready to run, no additional files needed.",
+    "inst": "Ready to run, no additional files needed. Game data is extracted from data-part*.tar.gz on first launch.",
     "inst_md": null,
     "genres": [
       "action",

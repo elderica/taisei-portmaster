@@ -23,6 +23,28 @@ cd $GAMEDIR
 
 > "$GAMEDIR/log.txt" && exec > >(tee "$GAMEDIR/log.txt") 2>&1
 
+ARCHIVE_FILES=(data-part*.tar.gz)
+if [ -f "${ARCHIVE_FILES[0]}" ]; then
+  if [ -d data/ ]; then
+    pm_message "Removing old game data"
+    $ESUDO rm -rf data/
+  fi
+  pm_message "Extracting game data, this can take a few minutes..."
+  for archive in "${ARCHIVE_FILES[@]}"; do
+    if ! gunzip -c "$archive" | tar xf -; then
+      pm_message "Error: Extraction failed."
+      sleep 5
+      exit 1
+    fi
+  done
+  pm_message "Extraction successful."
+  $ESUDO rm -f "${ARCHIVE_FILES[@]}"
+elif [ ! -d data/ ]; then
+  pm_message "Error: No data directory present and archive files not found."
+  sleep 5
+  exit 1
+fi
+
 $ESUDO chmod +x "$GAMEDIR/$BINARY"
 
 export LD_LIBRARY_PATH="$GAMEDIR/libs.${DEVICE_ARCH}:$LD_LIBRARY_PATH"
