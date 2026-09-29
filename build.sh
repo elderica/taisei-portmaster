@@ -25,6 +25,16 @@ JOBS=$(nproc)
 
 if [ "$(id -u)" = 0 ] && command -v apt-get >/dev/null; then
   export DEBIAN_FRONTEND=noninteractive
+  # bullseye is EOL and its security pool is gone from deb.debian.org; use a fixed snapshot
+  if grep -q bullseye /etc/os-release; then
+    SNAP=http://snapshot.debian.org/archive
+    cat > /etc/apt/sources.list <<EOF
+deb $SNAP/debian/20260801T000000Z bullseye main
+deb $SNAP/debian-security/20260801T000000Z bullseye-security main
+EOF
+    rm -f /etc/apt/sources.list.d/*
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99snapshot
+  fi
   apt-get update
   apt-get install -y --no-install-recommends \
     build-essential git cmake ninja-build pkg-config gettext patchelf \
