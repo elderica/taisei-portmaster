@@ -11,8 +11,11 @@
 set -euo pipefail
 
 TAISEI_REF=v1.4.6
-SDL_REF=release-3.4.16
-# PortMaster-New commit to take the sdl3-sdl2-backend libSDL3.so.0 shim from
+# sdl3-sdl2-backend: SDL3 API on top of the device's own SDL2 (same commit as railroadrampage)
+SHIM_REF=6057d79ba
+# SPIRV-Cross for the shim's GLES GPU backend; same version as Taisei's SPIRV-Cross.wrap
+SPIRV_CROSS_REF=vulkan-sdk-1.3.296.0
+# PortMaster-New commit to take railroadrampage's shim fixes patch from
 PM_COMMIT=12e229443e509d193456708a6dc43e4fc0104cd3
 PM_RAW=https://raw.githubusercontent.com/PortsMaster/PortMaster-New/$PM_COMMIT/ports/railroadrampage/railroadrampage
 
@@ -44,18 +47,7 @@ python3 -m pip install --upgrade 'meson>=1.8' backports.zstd
 
 mkdir -p "$WORK"
 
-# SDL3, as a shared library to link against. At runtime it is replaced by the shim.
-if [ ! -f "$WORK/sdl3/lib/pkgconfig/sdl3.pc" ]; then
-  rm -rf "$WORK/SDL"
-  git clone --depth 1 -b $SDL_REF https://github.com/libsdl-org/SDL.git "$WORK/SDL"
-  cmake -S "$WORK/SDL" -B "$WORK/SDL/build" -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$WORK/sdl3" -DCMAKE_INSTALL_LIBDIR=lib \
-    -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_UNIX_CONSOLE_BUILD=ON
-  cmake --build "$WORK/SDL/build" -j "$JOBS"
-  cmake --install "$WORK/SDL/build"
-fi
-
-# Taisei, with everything except SDL3 linked statically
+# Taisei source
 if [ ! -d "$WORK/taisei" ]; then
   git clone --depth 1 -b $TAISEI_REF --recurse-submodules --shallow-submodules \
     https://github.com/taisei-project/taisei.git "$WORK/taisei"
@@ -64,6 +56,32 @@ if [ ! -d "$WORK/taisei" ]; then
   # Keep one GL window; the SDL3 shim loses the context when a window is destroyed
   git -C "$WORK/taisei" apply "$ROOT/patches/taisei-gles30-single-window.patch"
 fi
+
+# SDL3 shim, built the same way as railroadrampage
+if [ ! -f "$WORK/sdl3/lib/pkgconfig/sdl3.pc" ]; then
+  rm -rf "$WORK/shim" "$WORK/SPIRV-Cross"
+  git clone --depth 1 -b $SPIRV_CROSS_REF https://github.com/KhronosGroup/SPIRV-Cross.git "$WORK/SPIRV-Cross"
+  git clone -b sdl2-backend https://github.com/bmdhacks/SDL.git "$WORK/shim"
+  git -C "$WORK/shim" checkout $SHIM_REF
+  curl -fsSL "$PM_RAW/patches/sdl3-sdl2-backend-fixes.patch" | git -C "$WORK/shim" apply
+  cmake -S "$WORK/shim" -B "$WORK/shim/build" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$WORK/sdl3" -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_C_FLAGS="-march=armv8-a" \
+    -DSDL_SDL2_BACKEND=ON \
+    -DSDL_SPIRV_CROSS_DIR="$WORK/SPIRV-Cross" \
+    -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_KMSDRM=OFF \
+    -DSDL_PIPEWIRE=OFF -DSDL_PULSEAUDIO=OFF -DSDL_ALSA=OFF \
+    -DSDL_SNDIO=OFF -DSDL_OSS=OFF -DSDL_JACK=OFF \
+    -DSDL_OFFSCREEN=OFF -DSDL_DUMMYVIDEO=OFF \
+    -DSDL_DUMMYAUDIO=OFF -DSDL_DISKAUDIO=OFF \
+    -DSDL_VULKAN=OFF -DSDL_GPU=ON -DSDL_RENDER_GPU=ON \
+    -DSDL_UNIX_CONSOLE_BUILD=ON \
+    -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF
+  cmake --build "$WORK/shim/build" -j "$JOBS"
+  cmake --install "$WORK/shim/build"
+fi
+
+# Taisei, with everything except SDL3 linked statically
 rm -rf "$WORK/build" "$WORK/install"
 PKG_CONFIG_PATH="$WORK/sdl3/lib/pkgconfig" meson setup "$WORK/build" "$WORK/taisei" \
   --buildtype=release -Dstrip=true --prefix="$WORK/install" --default-library=static \
@@ -81,11 +99,12 @@ cp "$WORK/install/taisei" "$GAMEDIR/taisei.$ARCH"
 patchelf --remove-rpath "$GAMEDIR/taisei.$ARCH"
 cp -r "$WORK/install/data" "$GAMEDIR/data"
 
-curl -fsSL -o "$GAMEDIR/libs.$ARCH/libSDL3.so.0" "$PM_RAW/libs.aarch64/libSDL3.so.0"
+cp -L "$WORK/sdl3/lib/libSDL3.so.0" "$GAMEDIR/libs.$ARCH/libSDL3.so.0"
+strip "$GAMEDIR/libs.$ARCH/libSDL3.so.0"
 
 S=$WORK/taisei/subprojects
 cp "$WORK/taisei/COPYING.txt"         "$GAMEDIR/licenses/LICENSE.taisei.txt"
-curl -fsSL -o "$GAMEDIR/licenses/LICENSE.SDL3.txt" "$PM_RAW/licenses/SDL3-sdl2backend-LICENSE.txt"
+cp "$WORK/shim/LICENSE.txt"           "$GAMEDIR/licenses/LICENSE.SDL3.txt"
 cp "$S/SPIRV-Cross/LICENSE"           "$GAMEDIR/licenses/LICENSE.SPIRV-Cross.txt"
 cp "$S/basis_universal/LICENSE"       "$GAMEDIR/licenses/LICENSE.basis_universal.txt"
 cp "$S/cglm/LICENSE"                  "$GAMEDIR/licenses/LICENSE.cglm.txt"

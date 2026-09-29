@@ -4,7 +4,7 @@
 
 - Ready to run: all game data is open source and included.
 - OpenGL ES 3.0 renderer.
-- SDL3 is provided at runtime by the [sdl3-sdl2-backend](https://github.com/bmdhacks/SDL/tree/sdl2-backend) `libSDL3.so.0` shim (taken from PortMaster-New), so the game uses the device's own SDL2.
+- SDL3 is provided at runtime by the [sdl3-sdl2-backend](https://github.com/bmdhacks/SDL/tree/sdl2-backend) `libSDL3.so.0` shim, so the game uses the device's own SDL2. It is built from commit `6057d79` with railroadrampage's `sdl3-sdl2-backend-fixes.patch` from PortMaster-New, the same way as that port.
 - Built in `debian:bullseye` (glibc 2.31). Every dependency except SDL3 is linked statically.
 
 ## Download
