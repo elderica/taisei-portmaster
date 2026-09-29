@@ -61,6 +61,8 @@ if [ ! -d "$WORK/taisei" ]; then
     https://github.com/taisei-project/taisei.git "$WORK/taisei"
   # GCC 10 (bullseye) does not accept C23 `= {}` initializers on VLAs
   git -C "$WORK/taisei" apply "$ROOT/patches/taisei-gcc10-vla-init.patch"
+  # Keep one GL window; the SDL3 shim loses the context when a window is destroyed
+  git -C "$WORK/taisei" apply "$ROOT/patches/taisei-gles30-single-window.patch"
 fi
 rm -rf "$WORK/build" "$WORK/install"
 PKG_CONFIG_PATH="$WORK/sdl3/lib/pkgconfig" meson setup "$WORK/build" "$WORK/taisei" \
