@@ -52,6 +52,14 @@ export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 export TAISEI_STORAGE_PATH="$GAMEDIR/conf"
 export TAISEI_CACHE_PATH="$GAMEDIR/cache"
 
+# The default 512-frame audio buffer pops on slower devices; use 1024
+if [ -f "$GAMEDIR/conf/config" ]; then
+  sed -i 's/^mixer_chunksize = 512$/mixer_chunksize = 1024/' "$GAMEDIR/conf/config"
+else
+  mkdir -p "$GAMEDIR/conf"
+  printf '@version = 4\nmixer_chunksize = 1024\n' > "$GAMEDIR/conf/config"
+fi
+
 GAME_SDL_VIDEODRIVER=""
 if [ -n "$SDL_VIDEODRIVER" ]; then
   export SDL3SHIM_SDL2_VIDEODRIVER="$SDL_VIDEODRIVER"
