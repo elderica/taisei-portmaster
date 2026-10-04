@@ -1,0 +1,13 @@
+diff --git a/src/audio/sdl2/SDL_sdl2audio.c b/src/audio/sdl2/SDL_sdl2audio.c
+index ed18d285d..3141528ff 100644
+--- a/src/audio/sdl2/SDL_sdl2audio.c
++++ b/src/audio/sdl2/SDL_sdl2audio.c
+@@ -122,7 +122,7 @@ static bool SDL2AUDIO_OpenDevice(SDL_AudioDevice *device)
+ 
+     Uint32 dev = (Uint32)SDL2_OpenAudioDevice_ptr(
+         NULL, device->recording ? 1 : 0,
+-        &desired, &obtained, SDL2_AUDIO_ALLOW_ANY_CHANGE
++        &desired, &obtained, 0  /* let SDL2 convert: `obtained` is never used here */
+     );
+ 
+     if (dev == 0) {

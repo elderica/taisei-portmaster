@@ -64,6 +64,8 @@ if [ ! -f "$WORK/sdl3/lib/pkgconfig/sdl3.pc" ]; then
   git clone -b sdl2-backend https://github.com/bmdhacks/SDL.git "$WORK/shim"
   git -C "$WORK/shim" checkout $SHIM_REF
   curl -fsSL "$PM_RAW/patches/sdl3-sdl2-backend-fixes.patch" | git -C "$WORK/shim" apply
+  # Make SDL2 convert audio itself; the shim ignores the format SDL2 actually opened
+  git -C "$WORK/shim" apply "$ROOT/patches/sdl3-shim-audio-keep-format.patch"
   cmake -S "$WORK/shim" -B "$WORK/shim/build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$WORK/sdl3" -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_C_FLAGS="-march=armv8-a" \
