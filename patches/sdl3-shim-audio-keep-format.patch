@@ -1,13 +1,24 @@
 diff --git a/src/audio/sdl2/SDL_sdl2audio.c b/src/audio/sdl2/SDL_sdl2audio.c
-index ed18d285d..3141528ff 100644
+index ed18d285d..bb2419db6 100644
 --- a/src/audio/sdl2/SDL_sdl2audio.c
 +++ b/src/audio/sdl2/SDL_sdl2audio.c
+@@ -37,8 +37,8 @@ typedef struct SDL2_AudioSpec {
+     void *userdata;
+ } SDL2_AudioSpec;
+ 
+-/* SDL2 AUDIO_ALLOW_ANY_CHANGE */
+-#define SDL2_AUDIO_ALLOW_ANY_CHANGE 0x0F
++/* SDL2 SDL_AUDIO_ALLOW_SAMPLES_CHANGE */
++#define SDL2_AUDIO_ALLOW_SAMPLES_CHANGE 0x08
+ 
+ static bool SDL2AUDIO_WaitDevice(SDL_AudioDevice *device)
+ {
 @@ -122,7 +122,7 @@ static bool SDL2AUDIO_OpenDevice(SDL_AudioDevice *device)
  
      Uint32 dev = (Uint32)SDL2_OpenAudioDevice_ptr(
          NULL, device->recording ? 1 : 0,
 -        &desired, &obtained, SDL2_AUDIO_ALLOW_ANY_CHANGE
-+        &desired, &obtained, 0  /* let SDL2 convert: `obtained` is never used here */
++        &desired, &obtained, SDL2_AUDIO_ALLOW_SAMPLES_CHANGE  /* SDL2 converts the rest */
      );
  
      if (dev == 0) {
